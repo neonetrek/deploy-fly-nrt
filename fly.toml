@@ -1,0 +1,52 @@
+app = "neonetrek-nrt"
+primary_region = "nrt"
+
+[build]
+
+[env]
+  WS_PORT = "3000"
+
+# Persistent volume for player accounts, stats, and game state.
+# Data lives in /opt/netrek/var (players, players.index, scores, planets, etc.)
+[mounts]
+  source = "netrek_data"
+  destination = "/opt/netrek/var"
+
+# HTTP service: web client + WebSocket proxy
+[[services]]
+  protocol = "tcp"
+  internal_port = 3000
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 50
+
+  [[services.http_checks]]
+    interval = 10000
+    grace_period = "30s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    timeout = 2000
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 3000
+    path = "/health"
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "30s"
+
+[[vm]]
+  cpus = 2
+  memory = "512mb"
